@@ -58,21 +58,15 @@ jobs:
       - run: cosign version
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@9754a253a8673b0ea869c2e863b4e975497efd0c # v4.1.1
+        run: goreleaser release --rm-dist
         if: inputs.homebrew
-        with:
-          version: latest
-          args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ github.token }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@9754a253a8673b0ea869c2e863b4e975497efd0c # v4.1.1
+        run: goreleaser release --rm-dist
         if: "! inputs.homebrew"
-        with:
-          version: latest
-          args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
