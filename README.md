@@ -28,9 +28,10 @@ jobs:
 ## Requirements
 
 - Cosign
+- GoReleaser
 
 ```sh
-aqua g -i sigstore/cosign
+aqua g -i sigstore/cosign goreleaser/goreleaser
 ```
 
 ## LICENSE
