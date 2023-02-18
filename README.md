@@ -17,6 +17,7 @@ jobs:
     with:
       homebrew: true
       aqua_version: v1.32.3
+      go-version: 1.19.5
     secrets:
       gh_app_id: ${{ secrets.APP_ID }}
       gh_app_private_key: ${{ secrets.APP_PRIVATE_KEY }}
