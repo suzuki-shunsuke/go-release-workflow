@@ -7,6 +7,9 @@ on:
         required: false
         type: boolean
         default: false
+      aqua_policy_allow:
+        required: false
+        type: string
       aqua_policy_config:
         required: false
         type: string
@@ -46,6 +49,7 @@ jobs:
       - uses: aquaproj/aqua-installer@294926f94b4233f202a2f03875c604f840cfed70 # v2.1.1
         with:
           aqua_version: ${{inputs.aqua_version}}
+          policy_allow: ${{inputs.aqua_policy_allow}}
 
       - name: Generate token
         id: generate_token
