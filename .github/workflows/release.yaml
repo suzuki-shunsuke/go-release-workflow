@@ -24,6 +24,8 @@ on:
         required: false
       gh_app_private_key:
         required: false
+      chocolatey_api_key:
+        required: false
 
 permissions: {}
 
@@ -74,12 +76,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
 
       - name: Run GoReleaser
         run: goreleaser release --clean
         if: "! inputs.homebrew"
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
 
       - name: Generate hashes
         id: hash
