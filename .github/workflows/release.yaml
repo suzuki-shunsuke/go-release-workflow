@@ -69,14 +69,14 @@ jobs:
       - run: cosign version
 
       - name: Run GoReleaser
-        run: goreleaser release --rm-dist
+        run: goreleaser release --clean
         if: inputs.homebrew
         env:
           GITHUB_TOKEN: ${{ github.token }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
 
       - name: Run GoReleaser
-        run: goreleaser release --rm-dist
+        run: goreleaser release --clean
         if: "! inputs.homebrew"
         env:
           GITHUB_TOKEN: ${{ github.token }}
