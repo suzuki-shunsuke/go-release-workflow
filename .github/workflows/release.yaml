@@ -19,12 +19,23 @@ on:
       go-version:
         required: true
         type: string
+      runs-on:
+        required: false
+        type: string
+        default: '"ubuntu-latest"'
+        description: |
+          JSON string for runs-on.
+          e.g.
+          runs-on: '"macos-latest"'
+          runs-on: '["foo"]'
     secrets:
       gh_app_id:
         required: false
       gh_app_private_key:
         required: false
       chocolatey_api_key:
+        required: false
+      winget_github_token:
         required: false
 
 permissions: {}
@@ -35,7 +46,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{fromJSON(inputs.runs-on)}}
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
     permissions:
@@ -76,14 +87,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
-          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+          CHOCOLATEY_API_KEY: ${{ secrets.chocolatey_api_key }}
+          WINGET_GITHUB_TOKEN: ${{ secrets.winget_github_token }}
 
       - name: Run GoReleaser
         run: goreleaser release --clean
         if: "! inputs.homebrew"
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+          CHOCOLATEY_API_KEY: ${{ secrets.chocolatey_api_key }}
+          WINGET_GITHUB_TOKEN: ${{ secrets.winget_github_token }}
 
       - name: Generate hashes
         id: hash
