@@ -28,6 +28,12 @@ on:
           e.g.
           runs-on: '"macos-latest"'
           runs-on: '["foo"]'
+      winget_head_repo:
+        required: false
+        type: string
+      winget_base_repo:
+        required: false
+        type: string
     secrets:
       gh_app_id:
         required: false
@@ -36,6 +42,8 @@ on:
       chocolatey_api_key:
         required: false
       winget_github_token:
+        required: false
+      winget_new:
         required: false
 
 permissions: {}
@@ -88,7 +96,6 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
           CHOCOLATEY_API_KEY: ${{ secrets.chocolatey_api_key }}
-          WINGET_GITHUB_TOKEN: ${{ secrets.winget_github_token }}
 
       - name: Run GoReleaser
         run: goreleaser release --clean
@@ -96,7 +103,60 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           CHOCOLATEY_API_KEY: ${{ secrets.chocolatey_api_key }}
-          WINGET_GITHUB_TOKEN: ${{ secrets.winget_github_token }}
+
+      - name: Get parameters to send a pull request to winget-pkgs
+        # manifests/<first lower case letter of publisher>/<publisher>/<package>/<version>/
+        id: winget
+        run: |
+          set -euo pipefail
+
+          if [ -z "$WINGET_TOKEN" ]; then
+            exit 0
+          fi
+
+          cd dist/winget
+
+          pkg_id=$(find manifests -type f | grep -E "\.yaml$" |
+            sed "s|^manifests/./||" |
+            head -n 1 |
+            xargs -n 1 dirname)
+
+          echo "branch=$pkg_id" >> "$GITHUB_OUTPUT"
+          echo "publisher=${pkg_id%%/*}" >> "$GITHUB_OUTPUT"
+          echo "pkg_name=${a%/*}" >> "$GITHUB_OUTPUT"
+          echo "version=${pkg_id##*/}" >> "$GITHUB_OUTPUT"
+
+          title_prefix=Update
+          if [ "$WINGET_NEW" = true ]; then
+            title_prefix=New
+          fi
+          title="$title_prefix version: ${publisher}.${pkg_name} ${version}"
+          echo "title=$title" >> "$GITHUB_OUTPUT"
+        env:
+          WINGET_TOKEN: ${{ secrets.winget_github_token }}
+
+      - name: Push winget manifest to a remote branch
+        if: steps.winget.outputs.branch != ''
+        run: |
+          cd dist/winget
+          find manifests -type f | grep -E "\.yaml$" |
+            xargs ghcp commit -r "$REPO" -b "$BRANCH" -m "$COMMIT_MESSAGE"
+        env:
+          BRANCH: ${{ steps.winget.outputs.branch }}
+          COMMIT_MESSAGE: ${{ steps.winget.outputs.title }}
+          GITHUB_TOKEN: ${{ secrets.winget_github_token }}
+          REPO: ${{ inputs.winget_head_repo }}
+
+      - name: Create a pull request to winget-pkgs
+        if: steps.winget.outputs.branch != ''
+        run: |
+          ghcp pull-request -r "$HEAD_REPO" -b "$BRANCH" --base-repo "$BASE_REPO" --title "$TITLE"
+        env:
+          BRANCH: ${{ steps.winget.outputs.branch }}
+          TITLE: ${{ steps.winget.outputs.title }}
+          GITHUB_TOKEN: ${{ secrets.winget_github_token }}
+          BASE_REPO: ${{ inputs.winget_base_repo }}
+          HEAD_REPO: ${{ inputs.winget_head_repo }}
 
       - name: Generate hashes
         id: hash
