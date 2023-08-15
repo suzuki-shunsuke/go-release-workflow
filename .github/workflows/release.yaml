@@ -165,7 +165,9 @@ jobs:
       - name: Create a pull request to winget-pkgs
         if: steps.winget.outputs.branch != ''
         run: |
+          sleep 5
           ghcp pull-request -r "$HEAD_REPO" -b "$BRANCH" --base-repo "$BASE_REPO" --title "$TITLE"
+          # gh -R "$BASE_REPO" pr create -H "$HEAD_REPO" --title "$TITLE"
         env:
           BRANCH: ${{ steps.winget.outputs.branch }}
           TITLE: ${{ steps.winget.outputs.title }}
