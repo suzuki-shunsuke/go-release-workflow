@@ -114,6 +114,9 @@ jobs:
             exit 0
           fi
 
+          echo "head_repo=${HEAD_REPO:-${GITHUB_REPOSITORY_OWNER}/winget-pkgs}" >> "$GITHUB_OUTPUT"
+          echo "base_repo=${BASE_REPO:-microsoft/winget-pkgs}" >> "$GITHUB_OUTPUT"
+
           cd dist/winget
 
           pkg_id=$(find manifests -type f | grep -E "\.yaml$" |
@@ -134,6 +137,8 @@ jobs:
           echo "title=$title" >> "$GITHUB_OUTPUT"
         env:
           WINGET_TOKEN: ${{ secrets.winget_github_token }}
+          BASE_REPO: ${{ inputs.winget_base_repo }}
+          HEAD_REPO: ${{ inputs.winget_head_repo }}
 
       - name: Push winget manifest to a remote branch
         if: steps.winget.outputs.branch != ''
@@ -145,7 +150,7 @@ jobs:
           BRANCH: ${{ steps.winget.outputs.branch }}
           COMMIT_MESSAGE: ${{ steps.winget.outputs.title }}
           GITHUB_TOKEN: ${{ secrets.winget_github_token }}
-          REPO: ${{ inputs.winget_head_repo }}
+          REPO: ${{ steps.winget.outputs.head_repo }}
 
       - name: Create a pull request to winget-pkgs
         if: steps.winget.outputs.branch != ''
@@ -155,8 +160,8 @@ jobs:
           BRANCH: ${{ steps.winget.outputs.branch }}
           TITLE: ${{ steps.winget.outputs.title }}
           GITHUB_TOKEN: ${{ secrets.winget_github_token }}
-          BASE_REPO: ${{ inputs.winget_base_repo }}
-          HEAD_REPO: ${{ inputs.winget_head_repo }}
+          BASE_REPO: ${{ steps.winget.outputs.base_repo }}
+          HEAD_REPO: ${{ steps.winget.outputs.head_repo }}
 
       - name: Generate hashes
         id: hash
