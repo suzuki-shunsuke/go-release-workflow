@@ -126,6 +126,8 @@ jobs:
             head -n 1 |
             xargs -n 1 dirname)
 
+          a=${pkg_id#*/}
+
           echo "branch=$pkg_id" >> "$GITHUB_OUTPUT"
           echo "publisher=${pkg_id%%/*}" >> "$GITHUB_OUTPUT"
           echo "pkg_name=${a%/*}" >> "$GITHUB_OUTPUT"
@@ -145,6 +147,8 @@ jobs:
       - name: Push winget manifest to a remote branch
         if: steps.winget.outputs.branch != ''
         run: |
+          set -euo pipefail
+
           cd dist/winget
           find manifests -type f | grep -E "\.yaml$" |
             xargs ghcp commit -r "$REPO" -b "$BRANCH" -m "$COMMIT_MESSAGE"
