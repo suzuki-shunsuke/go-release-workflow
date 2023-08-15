@@ -127,11 +127,14 @@ jobs:
             xargs -n 1 dirname)
 
           a=${pkg_id#*/}
+          publisher=${pkg_id%%/*}
+          pkg_name=${a%/*}
+          version=${pkg_id##*/}
 
           echo "branch=$pkg_id" >> "$GITHUB_OUTPUT"
-          echo "publisher=${pkg_id%%/*}" >> "$GITHUB_OUTPUT"
-          echo "pkg_name=${a%/*}" >> "$GITHUB_OUTPUT"
-          echo "version=${pkg_id##*/}" >> "$GITHUB_OUTPUT"
+          echo "publisher=$publisher" >> "$GITHUB_OUTPUT"
+          echo "pkg_name=$pkg_name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
           title_prefix=Update
           if [ "$WINGET_NEW" = true ]; then
