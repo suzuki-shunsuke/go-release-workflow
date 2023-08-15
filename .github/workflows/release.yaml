@@ -33,7 +33,12 @@ on:
         type: string
       winget_base_repo:
         required: false
+        default: microsoft/winget-pkgs
         type: string
+      winget_new:
+        required: true
+        default: false
+        type: boolean
     secrets:
       gh_app_id:
         required: false
@@ -42,8 +47,6 @@ on:
       chocolatey_api_key:
         required: false
       winget_github_token:
-        required: false
-      winget_new:
         required: false
 
 permissions: {}
@@ -115,7 +118,6 @@ jobs:
           fi
 
           echo "head_repo=${HEAD_REPO:-${GITHUB_REPOSITORY_OWNER}/winget-pkgs}" >> "$GITHUB_OUTPUT"
-          echo "base_repo=${BASE_REPO:-microsoft/winget-pkgs}" >> "$GITHUB_OUTPUT"
 
           cd dist/winget
 
@@ -160,7 +162,7 @@ jobs:
           BRANCH: ${{ steps.winget.outputs.branch }}
           TITLE: ${{ steps.winget.outputs.title }}
           GITHUB_TOKEN: ${{ secrets.winget_github_token }}
-          BASE_REPO: ${{ steps.winget.outputs.base_repo }}
+          BASE_REPO: ${{ inputs.winget_base_repo }}
           HEAD_REPO: ${{ steps.winget.outputs.head_repo }}
 
       - name: Generate hashes
