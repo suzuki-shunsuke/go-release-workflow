@@ -143,6 +143,7 @@ jobs:
           WINGET_TOKEN: ${{ secrets.winget_github_token }}
           BASE_REPO: ${{ inputs.winget_base_repo }}
           HEAD_REPO: ${{ inputs.winget_head_repo }}
+          WINGET_NEW: ${{ inputs.winget_new }}
 
       - name: Push winget manifest to a remote branch
         if: steps.winget.outputs.branch != ''
