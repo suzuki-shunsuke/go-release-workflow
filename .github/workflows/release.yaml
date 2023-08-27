@@ -107,6 +107,14 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           CHOCOLATEY_API_KEY: ${{ secrets.chocolatey_api_key }}
 
+      - name: Generate hashes
+        id: hash
+        run: |
+          # sha256sum generates sha256 hash for all artifacts.
+          # base64 -w0 encodes to base64 and outputs on a single line.
+          # sha256sum artifact1 artifact2 ... | base64 -w0
+          echo "hashes=$(find dist -name "*.tar.gz" -print0 | xargs -0 sha256sum | base64 -w0)" >> "$GITHUB_OUTPUT"
+
       - name: Get parameters to send a pull request to winget-pkgs
         # manifests/<first lower case letter of publisher>/<publisher>/<package>/<version>/
         id: winget
@@ -114,6 +122,11 @@ jobs:
           set -euo pipefail
 
           if [ -z "$WINGET_TOKEN" ]; then
+            exit 0
+          fi
+
+          if ! [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            # Ignore prerelease
             exit 0
           fi
 
@@ -174,14 +187,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.pr_github_token }}
           BASE_REPO: ${{ inputs.winget_base_repo }}
           HEAD_REPO: ${{ steps.winget.outputs.head_repo }}
-
-      - name: Generate hashes
-        id: hash
-        run: |
-          # sha256sum generates sha256 hash for all artifacts.
-          # base64 -w0 encodes to base64 and outputs on a single line.
-          # sha256sum artifact1 artifact2 ... | base64 -w0
-          echo "hashes=$(find dist -name "*.tar.gz" -print0 | xargs -0 sha256sum | base64 -w0)" >> "$GITHUB_OUTPUT"
 
   provenance:
     needs: [build]
