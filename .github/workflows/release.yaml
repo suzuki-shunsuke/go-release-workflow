@@ -46,7 +46,7 @@ on:
         required: false
       chocolatey_api_key:
         required: false
-      winget_github_token:
+      pr_github_token:
         required: false
 
 permissions: {}
@@ -143,7 +143,7 @@ jobs:
           title="$title_prefix version: ${publisher}.${pkg_name} ${version}"
           echo "title=$title" >> "$GITHUB_OUTPUT"
         env:
-          WINGET_TOKEN: ${{ secrets.winget_github_token }}
+          WINGET_TOKEN: ${{ secrets.pr_github_token }}
           BASE_REPO: ${{ inputs.winget_base_repo }}
           HEAD_REPO: ${{ inputs.winget_head_repo }}
           WINGET_NEW: ${{ inputs.winget_new }}
@@ -159,7 +159,7 @@ jobs:
         env:
           BRANCH: ${{ steps.winget.outputs.branch }}
           COMMIT_MESSAGE: ${{ steps.winget.outputs.title }}
-          GITHUB_TOKEN: ${{ secrets.winget_github_token }}
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
           REPO: ${{ steps.winget.outputs.head_repo }}
 
       - name: Create a pull request to winget-pkgs
@@ -171,7 +171,7 @@ jobs:
         env:
           BRANCH: ${{ steps.winget.outputs.branch }}
           TITLE: ${{ steps.winget.outputs.title }}
-          GITHUB_TOKEN: ${{ secrets.winget_github_token }}
+          GITHUB_TOKEN: ${{ secrets.pr_github_token }}
           BASE_REPO: ${{ inputs.winget_base_repo }}
           HEAD_REPO: ${{ steps.winget.outputs.head_repo }}
 
