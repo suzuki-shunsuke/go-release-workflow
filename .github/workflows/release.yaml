@@ -36,7 +36,7 @@ on:
         default: microsoft/winget-pkgs
         type: string
       winget_new:
-        required: true
+        required: false
         default: false
         type: boolean
     secrets:
@@ -157,7 +157,7 @@ jobs:
   winget:
     needs: [build]
     runs-on: ubuntu-latest
-    if: steps.build.outputs.winget == 'true'
+    if: needs.build.outputs.winget == 'true'
     permissions: {}
     steps:
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
