@@ -65,7 +65,7 @@ jobs:
       contents: write # required to create a release
       id-token: write # required for cosign
     steps:
-      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
         with:
           go-version: ${{inputs.go-version}}
@@ -78,7 +78,7 @@ jobs:
 
       - name: Generate token
         id: generate_token
-        uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92 # v1.8.0
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
         with:
           app_id: ${{ secrets.gh_app_id }}
           private_key: ${{ secrets.gh_app_private_key }}
@@ -113,7 +113,7 @@ jobs:
           # sha256sum generates sha256 hash for all artifacts.
           # base64 -w0 encodes to base64 and outputs on a single line.
           # sha256sum artifact1 artifact2 ... | base64 -w0
-          echo "hashes=$(find dist -name "*.tar.gz" -print0 | xargs -0 sha256sum | base64 -w0)" >> "$GITHUB_OUTPUT"
+          echo "hashes=$((find dist -name "*.tar.gz" && find dist -name "*.zip") | xargs sha256sum | base64 -w0)" >> "$GITHUB_OUTPUT"
 
       - name: Check winget
         id: winget
@@ -148,7 +148,7 @@ jobs:
     # slsa-framework/slsa-github-generator doesn't support pinning version
     # > Invalid ref: 68bad40844440577b33778c9f29077a3388838e9. Expected ref of the form refs/tags/vX.Y.Z
     # https://github.com/slsa-framework/slsa-github-generator/issues/722
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.8.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.9.0
     with:
       base64-subjects: "${{ needs.build.outputs.hashes }}"
       # Upload provenance to a new release
