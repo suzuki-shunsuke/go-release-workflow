@@ -46,7 +46,7 @@ on:
         required: false
       chocolatey_api_key:
         required: false
-      pr_github_token:
+      github_token_for_winget:
         required: false
 
 permissions: {}
@@ -60,7 +60,8 @@ jobs:
     runs-on: ${{fromJSON(inputs.runs-on)}}
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
-      winget: ${{ steps.winget.outputs.winget }}
+      prerelease: ${{ steps.prerelease.outputs.value }}
+      winget: ${{ steps.github_token_for_winget.outputs.has }}
     permissions:
       contents: write # required to create a release
       id-token: write # required for cosign
@@ -76,8 +77,55 @@ jobs:
           aqua_version: ${{inputs.aqua_version}}
           policy_allow: ${{inputs.aqua_policy_allow}}
 
+      - name: Check App ID
+        id: app_id
+        env:
+          APP_ID: ${{ secrets.gh_app_id }}
+        run: |
+          if [ -n "$APP_ID" ]; then
+            has=true
+          else
+            has=false
+          fi
+          echo "has=$has" >> "$GITHUB_OUTPUT"
+
+      - name: Check secrets.GH_TOKEN_FOR_WINGET
+        id: github_token_for_winget
+        env:
+          GH_TOKEN_FOR_WINGET: ${{ secrets.github_token_for_winget }}
+        run: |
+          if [ -n "$GH_TOKEN_FOR_WINGET" ]; then
+            has=true
+          else
+            has=false
+          fi
+          echo "has=$has" >> "$GITHUB_OUTPUT"
+
+      - name: Check secrets.CHOCOLATEY_API_KEY
+        id: chocolatey
+        env:
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: |
+          if [ -n "$CHOCOLATEY_API_KEY" ]; then
+            has=true
+          else
+            has=false
+          fi
+          echo "has=$has" >> "$GITHUB_OUTPUT"
+
+      - name: Check if the version is a prerelease
+        id: prerelease
+        run: |
+          if [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            value=false
+          else
+            value=true
+          fi
+          echo "value=$value" >> "$GITHUB_OUTPUT"
+
       - name: Generate token
         id: generate_token
+        if: steps.app_id.outputs.has == 'true'
         uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
         with:
           app_id: ${{ secrets.gh_app_id }}
@@ -92,20 +140,27 @@ jobs:
         run: git fetch --prune --unshallow
       - run: cosign version
 
+      - name: Set envs
+        if: steps.prerelease.outputs.value != 'true'
+        run: |
+          if [ -n "$CHOCOLATEY_API_KEY" ]; then
+            echo "CHOCOLATEY_API_KEY=$CHOCOLATEY_API_KEY" >> "$GITHUB_ENV"
+          fi
+          if [ -n "$HOMEBREW_TAP_GITHUB_TOKEN" ]; then
+            echo "HOMEBREW_TAP_GITHUB_TOKEN=$HOMEBREW_TAP_GITHUB_TOKEN" >> "$GITHUB_ENV"
+          fi
+        env:
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+
       - name: Run GoReleaser
         run: goreleaser release --clean
         if: inputs.homebrew
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          HOMEBREW_TAP_GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
-          CHOCOLATEY_API_KEY: ${{ secrets.chocolatey_api_key }}
 
-      - name: Run GoReleaser
-        run: goreleaser release --clean
-        if: "! inputs.homebrew"
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          CHOCOLATEY_API_KEY: ${{ secrets.chocolatey_api_key }}
+      - name: Clear envs
+        run: echo "" > "$GITHUB_ENV"
 
       - name: Generate hashes
         id: hash
@@ -115,26 +170,8 @@ jobs:
           # sha256sum artifact1 artifact2 ... | base64 -w0
           echo "hashes=$((find dist -name "*.tar.gz" && find dist -name "*.zip") | xargs sha256sum | base64 -w0)" >> "$GITHUB_OUTPUT"
 
-      - name: Check winget
-        id: winget
-        run: |
-          set -euo pipefail
-
-          if [ -z "$WINGET_TOKEN" ]; then
-            echo "winget=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          if ! [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            # Ignore prerelease
-            echo "winget=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          echo "winget=true" >> "$GITHUB_OUTPUT"
-
       - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
-        if: steps.winget.outputs.winget == 'true'
+        if: steps.prerelease.outputs.value != 'true' && steps.github_token_for_winget.outputs.has == 'true'
         with:
           name: winget
           path: dist/winget
@@ -157,7 +194,7 @@ jobs:
   winget:
     needs: [build]
     runs-on: ubuntu-latest
-    if: needs.build.outputs.winget == 'true'
+    if: needs.build.outputs.winget == 'true' && needs.build.outputs.prerelease != 'true'
     permissions: {}
     steps:
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
@@ -209,7 +246,7 @@ jobs:
           title="$title_prefix version: ${publisher}.${pkg_name} ${version}"
           echo "title=$title" >> "$GITHUB_OUTPUT"
         env:
-          WINGET_TOKEN: ${{ secrets.pr_github_token }}
+          WINGET_TOKEN: ${{ secrets.github_token_for_winget }}
           BASE_REPO: ${{ inputs.winget_base_repo }}
           HEAD_REPO: ${{ inputs.winget_head_repo }}
           WINGET_NEW: ${{ inputs.winget_new }}
@@ -234,11 +271,11 @@ jobs:
           sleep 5
           body="This pull request was created by [GitHub Actions](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}).
           The manifests were generated by [GoReleaser](https://goreleaser.com/customization/winget/)."
-          ghcp pull-request -r "$HEAD_REPO" -b "$BRANCH" --base-repo "$BASE_REPO" --title "$TITLE" --body "$bODY"
+          ghcp pull-request -r "$HEAD_REPO" -b "$BRANCH" --base-repo "$BASE_REPO" --title "$TITLE" --body "$body"
           # gh -R "$BASE_REPO" pr create -H "$HEAD_REPO" --title "$TITLE"
         env:
           BRANCH: ${{ steps.winget.outputs.branch }}
           TITLE: ${{ steps.winget.outputs.title }}
-          GITHUB_TOKEN: ${{ secrets.pr_github_token }}
+          GITHUB_TOKEN: ${{ secrets.github_token_for_winget }}
           BASE_REPO: ${{ inputs.winget_base_repo }}
           HEAD_REPO: ${{ steps.winget.outputs.head_repo }}
