@@ -24,6 +24,8 @@ on:
         required: false
       gh_app_private_key:
         required: false
+      winget_github_token:
+        required: false
 
 permissions: {}
 
@@ -74,12 +76,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+          WINGET_GITHUB_TOKEN: ${{ secrets.winget_github_token }}
 
       - name: Run GoReleaser
         run: goreleaser release --clean
         if: "! inputs.homebrew"
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          WINGET_GITHUB_TOKEN: ${{ secrets.winget_github_token }}
 
       - name: Generate hashes
         id: hash
