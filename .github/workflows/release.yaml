@@ -19,6 +19,14 @@ on:
       go-version:
         required: true
         type: string
+      app_token_repositories:
+        required: false
+        type: string
+        default: >-
+          [
+            "${{github.event.repository.name}}",
+            "homebrew-${{github.event.repository.name}}"
+          ]
     secrets:
       gh_app_id:
         required: false
@@ -60,6 +68,11 @@ jobs:
         with:
           app_id: ${{ secrets.gh_app_id }}
           private_key: ${{ secrets.gh_app_private_key }}
+          repositories: ${{inputs.app_token_repositories}}
+          permissions: >-
+            {
+              "contents": "write"
+            }
 
       - name: remove changes
         # Sometimes it is failed to release by goreleaser due to changes of go.sum
