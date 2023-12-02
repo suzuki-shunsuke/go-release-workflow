@@ -2,6 +2,8 @@
 
 GitHub Actions Reusable Workflow for Go Application
 
+[workflow](.github/workflows/release.yaml)
+
 ## How to use
 
 ```yaml
@@ -13,10 +15,10 @@ on:
 permissions: {}
 jobs:
   release:
-    uses: suzuki-shunsuke/go-release-workflow/.github/workflows/release.yaml@8e0d6d2a7171206b9d95b3b59fe74f8333b1be1b # v0.1.0
+    uses: suzuki-shunsuke/go-release-workflow/.github/workflows/release.yaml@d5b30f148d2f6fb207c58aee61fab4d3a3021421 # v0.4.5
     with:
       homebrew: true
-      aqua_version: v1.32.3
+      aqua_version: v2.21.0
       go-version: 1.19.5
     secrets:
       gh_app_id: ${{ secrets.APP_ID }}
