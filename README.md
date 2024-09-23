@@ -27,6 +27,7 @@ jobs:
       contents: write
       id-token: write
       actions: read
+      attestations: write
 ```
 
 ## Requirements

@@ -52,7 +52,8 @@ jobs:
       hashes: ${{ steps.hash.outputs.hashes }}
     permissions:
       contents: write # required to create a release
-      id-token: write # required for cosign
+      id-token: write # required for cosign and GitHub Artifact Attestations
+      attestations: write # required for GitHub Artifact Attestations
     steps:
       - run: |
           echo "::error:: Either go-version or go-version-file must be set."
@@ -106,6 +107,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           WINGET_GITHUB_TOKEN: ${{ secrets.winget_github_token }}
+
+      - uses: actions/attest-build-provenance@173725a1209d09b31f9d30a3890cf2757ebbff0d # v1.1.2
+        with:
+          subject-path: |
+            dist/*.tar.gz
+            dist/*.zip
 
       - name: Generate hashes
         id: hash
