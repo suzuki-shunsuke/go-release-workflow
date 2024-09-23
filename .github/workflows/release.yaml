@@ -113,6 +113,9 @@ jobs:
           subject-path: |
             dist/*.tar.gz
             dist/*.zip
+            dist/*.txt
+            dist/*.pem
+            dist/*.sig
 
       - name: Generate hashes
         id: hash
