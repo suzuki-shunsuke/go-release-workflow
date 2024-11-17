@@ -66,7 +66,7 @@ jobs:
           go-version-file: ${{inputs.go-version-file}}
           cache: true
 
-      - uses: aquaproj/aqua-installer@6ce1f8848ec8e61f14d57bd5d7597057a6dd187c # v3.0.1
+      - uses: aquaproj/aqua-installer@e6160e5a751bbcbd337a834eb75c15ba9ca206ae # v3.0.2
         with:
           aqua_version: ${{inputs.aqua_version}}
           policy_allow: ${{inputs.aqua_policy_allow}}
