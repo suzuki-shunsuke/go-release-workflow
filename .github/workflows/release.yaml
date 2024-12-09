@@ -108,7 +108,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           WINGET_GITHUB_TOKEN: ${{ secrets.winget_github_token }}
 
-      - uses: actions/attest-build-provenance@c4fbc648846ca6f503a13a2281a5e7b98aa57202 # v2.0.1
+      - uses: actions/attest-build-provenance@7668571508540a607bdfd90a87a560489fe372eb # v2.1.0
         with:
           subject-path: |
             dist/*.tar.gz
