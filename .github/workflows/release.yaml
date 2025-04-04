@@ -16,6 +16,10 @@ on:
       aqua_version:
         required: true
         type: string
+      release_env:
+        type: string
+        required: false
+        default: main
       go-version:
         required: false
         type: string
@@ -30,13 +34,18 @@ on:
             "${{github.event.repository.name}}",
             "homebrew-${{github.event.repository.name}}"
           ]
-    secrets:
-      gh_app_id:
+      secret_name_app_id:
+        type: string
         required: false
-      gh_app_private_key:
+        default: APP_ID
+      secret_name_private_key:
+        type: string
         required: false
-      winget_github_token:
+        default: APP_PRIVATE_KEY
+      secret_name_winget_github_token:
+        type: string
         required: false
+        default: APP_PRIVATE_KEY
 
 permissions: {}
 
@@ -48,6 +57,7 @@ jobs:
   build:
     timeout-minutes: 30
     runs-on: ubuntu-latest
+    environment: ${{ (inputs.release_env && !contains(github.event.ref_name, '-')) && inputs.release_env || null }}
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
     permissions:
@@ -78,8 +88,8 @@ jobs:
         if: inputs.homebrew
         uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
         with:
-          app_id: ${{ secrets.gh_app_id }}
-          private_key: ${{ secrets.gh_app_private_key }}
+          app_id: ${{ secrets[inputs.secret_name_app_id] }}
+          private_key: ${{ secrets[inputs.secret_name_private_key] }}
           repositories: ${{inputs.app_token_repositories}}
           permissions: >-
             {
@@ -101,14 +111,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
-          WINGET_GITHUB_TOKEN: ${{ secrets.winget_github_token }}
+          WINGET_GITHUB_TOKEN: ${{ secrets[inputs.secret_name_winget_github_token] }}
 
       - name: Run GoReleaser
         run: goreleaser release --clean
         if: "! inputs.homebrew"
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          WINGET_GITHUB_TOKEN: ${{ secrets.winget_github_token }}
+          WINGET_GITHUB_TOKEN: ${{ secrets[inputs.secret_name_winget_github_token] }}
 
       - uses: actions/attest-build-provenance@c074443f1aee8d4aeeae555aebba3282517141b2 # v2.2.3
         with:
