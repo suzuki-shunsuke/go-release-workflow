@@ -16,36 +16,12 @@ on:
       aqua_version:
         required: true
         type: string
-      release_env:
-        type: string
-        required: false
-        default: release
       go-version:
         required: false
         type: string
       go-version-file:
         required: false
         type: string
-      app_token_repositories:
-        required: false
-        type: string
-        default: >-
-          [
-            "${{github.event.repository.name}}",
-            "homebrew-${{github.event.repository.name}}"
-          ]
-      secret_name_app_id:
-        type: string
-        required: false
-        default: APP_ID
-      secret_name_private_key:
-        type: string
-        required: false
-        default: APP_PRIVATE_KEY
-      secret_name_winget_github_token:
-        type: string
-        required: false
-        default: WINGET_GITHUB_TOKEN
 
 permissions: {}
 
@@ -57,7 +33,6 @@ jobs:
   build:
     timeout-minutes: 30
     runs-on: ubuntu-latest
-    environment: ${{ (inputs.release_env && !contains(github.ref_name, '-')) && inputs.release_env || null }}
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
     permissions:
@@ -83,19 +58,6 @@ jobs:
           aqua_version: ${{inputs.aqua_version}}
           policy_allow: ${{inputs.aqua_policy_allow}}
 
-      - name: Generate token
-        id: generate_token
-        if: inputs.homebrew && inputs.release_env && !contains(github.ref_name, '-')
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
-        with:
-          app_id: ${{ secrets[inputs.secret_name_app_id] }}
-          private_key: ${{ secrets[inputs.secret_name_private_key] }}
-          repositories: ${{inputs.app_token_repositories}}
-          permissions: >-
-            {
-              "contents": "write"
-            }
-
       - name: remove changes
         # Sometimes it is failed to release by goreleaser due to changes of go.sum
         run: git checkout -- .
@@ -107,18 +69,13 @@ jobs:
 
       - name: Run GoReleaser
         run: goreleaser release --clean
-        if: inputs.homebrew && inputs.release_env && !contains(github.ref_name, '-')
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          HOMEBREW_TAP_GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
-          WINGET_GITHUB_TOKEN: ${{ secrets[inputs.secret_name_winget_github_token] }}
 
-      - name: Run GoReleaser
-        run: goreleaser release --clean
-        if: |
-          !(inputs.homebrew && inputs.release_env && !contains(github.ref_name, '-'))
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: goreleaser
+          path: dist/homebrew/*.rb
 
       - uses: actions/attest-build-provenance@c074443f1aee8d4aeeae555aebba3282517141b2 # v2.2.3
         with:
