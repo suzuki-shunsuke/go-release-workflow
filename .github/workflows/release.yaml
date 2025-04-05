@@ -19,7 +19,7 @@ on:
       release_env:
         type: string
         required: false
-        default: main
+        default: release
       go-version:
         required: false
         type: string
