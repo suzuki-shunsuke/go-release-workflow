@@ -77,8 +77,9 @@ jobs:
         with:
           name: goreleaser
           path: |
-            dist/homebrew/*.rb
-            dist/scoop/*.json
+            dist/homebrew
+            dist/scoop
+            dist/winget
 
       - uses: actions/attest-build-provenance@c074443f1aee8d4aeeae555aebba3282517141b2 # v2.2.3
         with:
