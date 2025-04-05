@@ -45,7 +45,7 @@ on:
       secret_name_winget_github_token:
         type: string
         required: false
-        default: APP_PRIVATE_KEY
+        default: WINGET_GITHUB_TOKEN
 
 permissions: {}
 
