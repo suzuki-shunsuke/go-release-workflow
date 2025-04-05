@@ -57,7 +57,7 @@ jobs:
   build:
     timeout-minutes: 30
     runs-on: ubuntu-latest
-    environment: ${{ (inputs.release_env && !contains(github.event.ref_name, '-')) && inputs.release_env || null }}
+    environment: ${{ (inputs.release_env && !contains(github.ref_name, '-')) && inputs.release_env || null }}
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
     permissions:
