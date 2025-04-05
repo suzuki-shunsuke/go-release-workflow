@@ -3,10 +3,6 @@ name: Release Go
 on:
   workflow_call:
     inputs:
-      homebrew:
-        required: false
-        type: boolean
-        default: false
       aqua_policy_allow:
         required: false
         type: string
