@@ -34,9 +34,16 @@ jobs:
 
 - Cosign
 - GoReleaser
+- [go-licenses](https://github.com/google/go-licenses)
 
 ```sh
-aqua g -i sigstore/cosign goreleaser/goreleaser
+aqua g -i sigstore/cosign goreleaser/goreleaser google/go-licenses
+```
+
+.gitignore
+
+```
+third_party_licenses
 ```
 
 ## LICENSE
