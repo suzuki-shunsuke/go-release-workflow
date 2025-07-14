@@ -3,19 +3,22 @@ name: Release Go
 on:
   workflow_call:
     inputs:
+      aqua_version:
+        required: true
+        type: string
       aqua_policy_allow:
         required: false
         type: string
       aqua_policy_config:
         required: false
         type: string
-      aqua_version:
-        required: true
-        type: string
       go-version:
         required: false
         type: string
       go-version-file:
+        required: false
+        type: string
+      go_licenses_package:
         required: false
         type: string
 
@@ -62,6 +65,15 @@ jobs:
       - name: Unshallow
         run: git fetch --prune --unshallow
       - run: cosign version
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: goreleaser -v
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: go-licenses --help
+      - run: go-licenses save "$PACKAGE" --save_path third_party_licenses
+        with:
+          PACKAGE: ${{ inputs.go_licenses_package && inputs.go_licenses_package || format('./cmd/{0}', github.event.repository.name) }}
 
       - name: Run GoReleaser
         run: goreleaser release --clean
@@ -85,6 +97,7 @@ jobs:
             dist/*.txt
             dist/*.pem
             dist/*.sig
+            dist/*.sbom.json
 
       - name: Generate hashes
         id: hash
