@@ -72,7 +72,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
       - run: go-licenses --help
       - run: go-licenses save "$PACKAGE" --save_path third_party_licenses
-        with:
+        env:
           PACKAGE: ${{ inputs.go_licenses_package && inputs.go_licenses_package || format('./cmd/{0}', github.event.repository.name) }}
 
       - name: Run GoReleaser
