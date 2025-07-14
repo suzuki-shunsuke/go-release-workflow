@@ -76,8 +76,8 @@ jobs:
           PACKAGE: ${{ inputs.go_licenses_package && inputs.go_licenses_package || format('./cmd/{0}', github.event.repository.name) }}
       - run: mkdir -p third_party_licenses/go
       - run: |
-          version=$(aqua which -v go)
-          curl -Lq -o third_party_licenses/go/LICENSE --retry 5 "https://raw.githubusercontent.com/golang/go/refs/tags/${version}/LICENSE"
+          version=$(go env GOVERSION)
+          curl -Lq -o third_party_licenses/go/LICENSE --retry 5 "https://raw.githubusercontent.com/golang/go/refs/tags/go${version#go}/LICENSE"
 
       - name: Run GoReleaser
         run: goreleaser release --clean
