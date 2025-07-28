@@ -30,6 +30,12 @@ jobs:
       attestations: write
 ```
 
+.gitignore
+
+```
+third_party_licenses
+```
+
 ## Requirements
 
 - Cosign
@@ -38,12 +44,6 @@ jobs:
 
 ```sh
 aqua g -i sigstore/cosign goreleaser/goreleaser google/go-licenses
-```
-
-.gitignore
-
-```
-third_party_licenses
 ```
 
 ## LICENSE
