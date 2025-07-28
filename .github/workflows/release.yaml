@@ -117,8 +117,6 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-24.04
     needs: [build]
-    outputs:
-      hashes: ${{ steps.hash.outputs.hashes }}
     permissions:
       contents: write # required to create a release
     steps:
@@ -134,8 +132,6 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-24.04
     needs: [build]
-    outputs:
-      hashes: ${{ steps.hash.outputs.hashes }}
     permissions:
       id-token: write # required for GitHub Artifact Attestations
       attestations: write # required for GitHub Artifact Attestations
@@ -156,7 +152,7 @@ jobs:
             dist/*.jsonl
 
   provenance:
-    needs: [release]
+    needs: [build, release]
     permissions:
       actions: read # Needed for detection of GitHub Actions environment.
       id-token: write # Needed for provenance signing and ID
