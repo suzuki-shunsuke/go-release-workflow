@@ -35,9 +35,8 @@ jobs:
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
     permissions:
-      contents: write # required to create a release
-      id-token: write # required for cosign and GitHub Artifact Attestations
-      attestations: write # required for GitHub Artifact Attestations
+      contents: read
+      id-token: write # required for cosign
     steps:
       - run: |
           echo "::error:: Either go-version or go-version-file must be set."
@@ -80,12 +79,27 @@ jobs:
           curl -Lq -o third_party_licenses/go/LICENSE --retry 5 "https://raw.githubusercontent.com/golang/go/refs/tags/go${version#go}/LICENSE"
 
       - name: Run GoReleaser
-        run: goreleaser release --clean
+        run: goreleaser release --skip publish --clean
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        if: "!contains(github.ref_name, '-')"
+        with:
+          name: dist
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.txt
+            dist/*.sbom.json
+            dist/*.jsonl
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: checksum
+          path: |
+            dist/*.txt
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: goreleaser
           path: |
@@ -93,6 +107,86 @@ jobs:
             dist/scoop
             dist/winget
 
+      - name: Generate hashes
+        id: hash
+        run: |
+          # sha256sum generates sha256 hash for all artifacts.
+          # base64 -w0 encodes to base64 and outputs on a single line.
+          # sha256sum artifact1 artifact2 ... | base64 -w0
+          echo "hashes=$( (find dist -name "*.tar.gz" && find dist -name "*.zip") | xargs sha256sum | base64 -w0)" >> "$GITHUB_OUTPUT"
+
+  cosign:
+    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    needs: [build]
+    permissions:
+      id-token: write # required for cosign
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: aquaproj/aqua-installer@d1fe50798dbadd4eb5b98957290ca175f6b4870f # v4.0.2
+        with:
+          aqua_version: ${{inputs.aqua_version}}
+          policy_allow: ${{inputs.aqua_policy_allow}}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: checksum
+          path: dist
+      - run: cosign version
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: |
+          checksum=$(find dist -name "*checksums.txt")
+          cosign sign-blob -y \
+            --output-signature "${checksum}.sig" \
+            --output-certificate "${checksum}.pem" \
+            --oidc-provider github \
+            "$checksum"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: cosign
+          path: |
+            dist/*.pem
+            dist/*.sig
+
+  release:
+    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    needs: [cosign]
+    permissions:
+      contents: write # required to create a release
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist
+          path: dist
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: cosign
+          path: dist
+      - run: ls dist
+      - run: gh release create -R "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" -p dist/*
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  attestation:
+    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    needs: [cosign]
+    permissions:
+      id-token: write # required for GitHub Artifact Attestations
+      attestations: write # required for GitHub Artifact Attestations
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist
+          path: dist
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: cosign
+          path: dist
       - uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
         with:
           subject-path: |
@@ -103,16 +197,8 @@ jobs:
             dist/*.sig
             dist/*.sbom.json
 
-      - name: Generate hashes
-        id: hash
-        run: |
-          # sha256sum generates sha256 hash for all artifacts.
-          # base64 -w0 encodes to base64 and outputs on a single line.
-          # sha256sum artifact1 artifact2 ... | base64 -w0
-          echo "hashes=$( (find dist -name "*.tar.gz" && find dist -name "*.zip") | xargs sha256sum | base64 -w0)" >> "$GITHUB_OUTPUT"
-
   provenance:
-    needs: [build]
+    needs: [build, release]
     permissions:
       actions: read # Needed for detection of GitHub Actions environment.
       id-token: write # Needed for provenance signing and ID
