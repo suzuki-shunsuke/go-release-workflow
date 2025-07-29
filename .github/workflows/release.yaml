@@ -84,20 +84,22 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        if: "!contains(github.ref_name, '-')"
         with:
           name: dist
           path: |
             dist/*.tar.gz
             dist/*.zip
             dist/*.txt
-            dist/*.pem
-            dist/*.sig
             dist/*.sbom.json
             dist/*.jsonl
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        if: "!contains(github.ref_name, '-')"
+        with:
+          name: checksum
+          path: |
+            dist/*.txt
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: goreleaser
           path: |
@@ -113,25 +115,59 @@ jobs:
           # sha256sum artifact1 artifact2 ... | base64 -w0
           echo "hashes=$( (find dist -name "*.tar.gz" && find dist -name "*.zip") | xargs sha256sum | base64 -w0)" >> "$GITHUB_OUTPUT"
 
-  release:
+  cosign:
     timeout-minutes: 10
     runs-on: ubuntu-24.04
     needs: [build]
     permissions:
+      id-token: write # required for cosign
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: checksum
+      - run: cosign version
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: |
+          checksum=$(find dist -name "*checksums.txt")
+          cosign sign-blob -y \
+            --output-signature "${checksum}.sig" \
+            --output-certificate "${checksum}.pem" \
+            --oidc-provider github \
+            "$checksum"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: cosign
+          path: |
+            dist/*.pem
+            dist/*.sig
+
+  release:
+    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    needs: [cosign]
+    permissions:
       contents: write # required to create a release
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        if: "!contains(github.ref_name, '-')"
         with:
           name: dist
-      - run: gh release create "$GITHUB_REF_NAME" -p dist/*
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: cosign
+      - run: ls dist
+      - run: gh release create -R "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" -p dist/*
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
   attestation:
     timeout-minutes: 10
     runs-on: ubuntu-24.04
-    needs: [build]
+    needs: [cosign]
     permissions:
       id-token: write # required for GitHub Artifact Attestations
       attestations: write # required for GitHub Artifact Attestations
@@ -140,6 +176,9 @@ jobs:
         if: "!contains(github.ref_name, '-')"
         with:
           name: dist
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: cosign
       - uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
         with:
           subject-path: |
@@ -149,7 +188,6 @@ jobs:
             dist/*.pem
             dist/*.sig
             dist/*.sbom.json
-            dist/*.jsonl
 
   provenance:
     needs: [build, release]
