@@ -36,7 +36,6 @@ jobs:
       hashes: ${{ steps.hash.outputs.hashes }}
     permissions:
       contents: read
-      id-token: write # required for cosign
     steps:
       - run: |
           echo "::error:: Either go-version or go-version-file must be set."
@@ -63,9 +62,6 @@ jobs:
         run: git fetch --tags -f
       - name: Unshallow
         run: git fetch --prune --unshallow
-      - run: cosign version
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
       - run: goreleaser -v
         env:
           GITHUB_TOKEN: ${{ github.token }}
