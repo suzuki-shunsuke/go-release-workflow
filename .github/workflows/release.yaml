@@ -132,13 +132,14 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: checksum
+          path: dist
       - run: cosign version
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - run: |
           checksum=$(find dist -name "*checksums.txt")
           cosign sign-blob -y \
-            --output-signature "${checksum}.sig" \
+            --output-signature "dist/${checksum}.sig" \
             --output-certificate "${checksum}.pem" \
             --oidc-provider github \
             "$checksum"
@@ -160,9 +161,11 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: dist
+          path: dist
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: cosign
+          path: dist
       - run: ls dist
       - run: gh release create -R "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" -p dist/*
         env:
@@ -177,12 +180,13 @@ jobs:
       attestations: write # required for GitHub Artifact Attestations
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        if: "!contains(github.ref_name, '-')"
         with:
           name: dist
+          path: dist
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: cosign
+          path: dist
       - uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
         with:
           subject-path: |
