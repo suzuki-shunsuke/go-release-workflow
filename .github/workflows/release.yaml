@@ -147,26 +147,6 @@ jobs:
             dist/*.pem
             dist/*.sig
 
-  release:
-    timeout-minutes: 10
-    runs-on: ubuntu-24.04
-    needs: [cosign]
-    permissions:
-      contents: write # required to create a release
-    steps:
-      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
-        with:
-          name: dist
-          path: dist
-      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
-        with:
-          name: cosign
-          path: dist
-      - run: ls dist
-      - run: gh release create -R "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" -p dist/*
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
   attestation:
     timeout-minutes: 10
     runs-on: ubuntu-24.04
@@ -194,7 +174,7 @@ jobs:
             dist/*.sbom.json
 
   provenance:
-    needs: [build, release]
+    needs: [build]
     permissions:
       actions: read # Needed for detection of GitHub Actions environment.
       id-token: write # Needed for provenance signing and ID
@@ -205,5 +185,29 @@ jobs:
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
       base64-subjects: "${{ needs.build.outputs.hashes }}"
-      # Upload provenance to a new release
-      upload-assets: true
+      upload-assets: false
+
+  release:
+    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    needs: [cosign, provenance]
+    permissions:
+      contents: write # required to create a release
+    steps:
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: dist
+          path: dist
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: cosign
+          path: dist
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: ${{ needs.provenance.outputs.provenance-name }}
+          path: dist
+
+      - run: ls dist
+      - run: gh release create -R "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" -p dist/*
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
