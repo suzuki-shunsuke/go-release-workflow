@@ -135,6 +135,9 @@ jobs:
       - run: |
           checksum=$(find dist -name "*checksums.txt")
           cosign sign-blob -y \
+            --bundle \
+            --use-signing-config \
+            --signing-config "${checksum}.bundle" \
             --output-signature "${checksum}.sig" \
             --output-certificate "${checksum}.pem" \
             --oidc-provider github \
