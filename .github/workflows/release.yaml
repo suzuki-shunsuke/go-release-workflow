@@ -134,6 +134,15 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
       - run: |
           checksum=$(find dist -name "*checksums.txt")
+
+          # To keep the compatibility with older cosign versions
+          cosign sign-blob -y \
+            --use-signing-config=false \
+            --output-signature "${checksum}.sig" \
+            --output-certificate "${checksum}.pem" \
+            --oidc-provider github \
+            "$checksum"
+
           cosign sign-blob "$checksum" \
             -y \
             --bundle "${checksum}.bundle" \
@@ -144,6 +153,8 @@ jobs:
           name: cosign
           path: |
             dist/*.bundle
+            dist/*.sig
+            dist/*.pem
 
   attestation:
     timeout-minutes: 10
@@ -169,6 +180,7 @@ jobs:
             dist/*.txt
             dist/*.pem
             dist/*.sig
+            dist/*.bundle
             dist/*.sbom.json
 
   provenance:
