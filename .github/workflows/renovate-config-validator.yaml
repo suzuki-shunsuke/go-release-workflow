@@ -6,13 +6,7 @@ on:
       - main
     paths:
       - .github/workflows/renovate-config-validator.yaml
-      - renovate.json
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/renovate-config-validator.yaml
-      - renovate.json
+      - renovate.json5
 
 jobs:
   renovate-config-validator:
