@@ -17,8 +17,10 @@ permissions: {}
 jobs:
   release:
     uses: suzuki-shunsuke/go-release-workflow/.github/workflows/release.yaml@b2ecf54e35aca9e9689e761f5bd6d1ad9542a8cf # v8.0.0
+    secrets:
+      TAKUMI_GUARD_BOT_ID: ${{secrets.TAKUMI_GUARD_BOT_ID}} # Optional. https://github.com/flatt-security/setup-takumi-guard-golang
     with:
-      aqua_version: v2.57.2
+      aqua_version: v2.59.1
       go-version-file: go.mod
     permissions:
       contents: write
