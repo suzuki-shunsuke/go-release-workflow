@@ -143,26 +143,16 @@ jobs:
       - run: |
           checksum=$(find dist -name "*checksums.txt")
 
-          # To keep the compatibility with older cosign versions
-          cosign sign-blob -y \
-            --use-signing-config=false \
-            --output-signature "${checksum}.sig" \
-            --output-certificate "${checksum}.pem" \
-            --oidc-provider github \
-            "$checksum"
-
           cosign sign-blob "$checksum" \
             -y \
-            --bundle "${checksum}.bundle" \
+            --bundle "${checksum}.sigstore.json" \
             --oidc-provider github
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: cosign
           path: |
-            dist/*.bundle
-            dist/*.sig
-            dist/*.pem
+            dist/*.sigstore.json
 
   attestation:
     timeout-minutes: 10
@@ -186,9 +176,7 @@ jobs:
             dist/*.tar.gz
             dist/*.zip
             dist/*.txt
-            dist/*.pem
-            dist/*.sig
-            dist/*.bundle
+            dist/*.sigstore.json
             dist/*.sbom.json
 
   provenance:
