@@ -22,6 +22,7 @@ jobs:
     with:
       aqua_version: v2.59.1
       go-version-file: go.mod
+      # go-cache: true # Optional. Enable the cache of actions/setup-go. The default is false
     permissions:
       contents: write
       id-token: write
