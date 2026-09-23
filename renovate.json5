@@ -5,4 +5,13 @@
     "github>aquaproj/aqua-renovate-config#2.13.0",
     "github>aquaproj/aqua-renovate-config:file#2.13.0(aqua/.*\\.ya?ml)",
   ],
+  packageRules: [
+    {
+      // The generator refuses to run unless it is called by a vX.Y.Z tag, so a
+      // digest here builds nothing. Version updates are still welcome.
+      // https://github.com/slsa-framework/slsa-github-generator/issues/722
+      matchDepNames: ["slsa-framework/slsa-github-generator"],
+      pinDigests: false,
+    },
+  ],
 }
