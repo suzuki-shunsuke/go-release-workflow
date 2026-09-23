@@ -15,6 +15,8 @@ jobs:
         with:
           aqua_version: v2.63.0
       - run: aqua upc -prune
+        env:
+          AQUA_GITHUB_TOKEN: ${{github.token}}
       - run: nllint -v
         env:
           AQUA_GITHUB_TOKEN: ${{github.token}}
@@ -23,4 +25,6 @@ jobs:
           AQUA_GITHUB_TOKEN: ${{github.token}}
       - run: git ls-files | nllint -s -f
       - run: pinact run -u README.md
+        env:
+          GITHUB_TOKEN: ${{github.token}}
       - uses: autofix-ci/action@c5b2d67aa2274e7b5a18224e8171550871fc7e4a # v1.3.4
