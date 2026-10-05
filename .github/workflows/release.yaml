@@ -54,6 +54,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - uses: $/actions/install
+        with:
+          aqua_version: ${{inputs.aqua_version}}
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: ${{inputs.go-version}}
@@ -64,6 +67,7 @@ jobs:
         with:
           bot-id: ${{secrets.TAKUMI_GUARD_BOT_ID}}
       - run: go mod download all
+      - run: go-licenses --help
       - run: tar -C "$(go env GOMODCACHE)" -czf "$RUNNER_TEMP/gomodcache.tar.gz" cache/download
       # Pass the modules via an artifact instead of actions/cache.
       # Artifacts are scoped to this workflow run, so they can't be poisoned by other workflows.
