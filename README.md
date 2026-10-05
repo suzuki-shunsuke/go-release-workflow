@@ -15,7 +15,7 @@ on:
 permissions: {}
 jobs:
   release:
-    uses: suzuki-shunsuke/go-release-workflow/.github/workflows/release.yaml@cf03c29d97518871efb36bbb80bcc01a19645b49 # v9.0.2
+    uses: suzuki-shunsuke/go-release-workflow/.github/workflows/release.yaml@7991a2f919c47c4d26ec592ec28dd0066bda28a0 # v10.0.0
     secrets:
       TAKUMI_GUARD_BOT_ID: ${{secrets.TAKUMI_GUARD_BOT_ID}} # Optional. https://github.com/flatt-security/setup-takumi-guard-golang
     with:
