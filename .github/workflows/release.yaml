@@ -42,7 +42,7 @@ jobs:
     # The build job runs code controlled by the caller (e.g. GoReleaser hooks),
     # so it must not have id-token: write.
     timeout-minutes: 30
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
       id-token: write
@@ -67,19 +67,27 @@ jobs:
         with:
           bot-id: ${{secrets.TAKUMI_GUARD_BOT_ID}}
       - run: go mod download all
+      # go-licenses is installed by `go install`, which can't run with GOPROXY=off in the build job.
+      # So build it here and pass the binary to the build job.
       - run: go-licenses --help
-      - run: tar -C "$(go env GOMODCACHE)" -czf "$RUNNER_TEMP/gomodcache.tar.gz" cache/download
-      # Pass the modules via an artifact instead of actions/cache.
+        env:
+          AQUA_GITHUB_TOKEN: ${{github.token}}
+      - run: |
+          mkdir -p "$RUNNER_TEMP/gomodule"
+          tar -C "$(go env GOMODCACHE)" -czf "$RUNNER_TEMP/gomodule/gomodcache.tar.gz" cache/download
+          tar -C "$(aqua root-dir)" -czf "$RUNNER_TEMP/gomodule/go_install.tar.gz" pkgs/go_install
+      # Pass the modules and binaries via an artifact instead of actions/cache.
       # Artifacts are scoped to this workflow run, so they can't be poisoned by other workflows.
+      # Files are archived with tar because artifacts don't preserve file permissions.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: gomodcache
-          path: ${{ runner.temp }}/gomodcache.tar.gz
+          name: gomodule
+          path: ${{ runner.temp }}/gomodule
           retention-days: 1
 
   build:
     timeout-minutes: 30
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: gomodule
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
@@ -100,16 +108,20 @@ jobs:
           cache: false
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: gomodcache
-          path: ${{ runner.temp }}
+          name: gomodule
+          path: ${{ runner.temp }}/gomodule
       - run: |
           gomodcache=$(go env GOMODCACHE)
           mkdir -p "$gomodcache"
-          tar -C "$gomodcache" -xzf "$RUNNER_TEMP/gomodcache.tar.gz"
+          tar -C "$gomodcache" -xzf "$RUNNER_TEMP/gomodule/gomodcache.tar.gz"
 
       - uses: $/actions/install
         with:
           aqua_version: ${{inputs.aqua_version}}
+      - run: |
+          root_dir=$(aqua root-dir)
+          mkdir -p "$root_dir"
+          tar -C "$root_dir" -xzf "$RUNNER_TEMP/gomodule/go_install.tar.gz"
 
       - name: remove changes
         # Sometimes it is failed to release by goreleaser due to changes of go.sum
@@ -122,6 +134,8 @@ jobs:
         env:
           AQUA_GITHUB_TOKEN: ${{ github.token }}
       - run: go-licenses --help
+        env:
+          AQUA_GITHUB_TOKEN: ${{ github.token }}
       - run: go-licenses save "$PACKAGE" --save_path third_party_licenses
         env:
           PACKAGE: ${{ inputs.go_licenses_package && inputs.go_licenses_package || format('./cmd/{0}', github.event.repository.name) }}
