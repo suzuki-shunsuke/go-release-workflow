@@ -117,7 +117,7 @@ jobs:
         run: git fetch --prune --unshallow
       - run: goreleaser -v
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          AQUA_GITHUB_TOKEN: ${{ github.token }}
       - run: go-licenses --help
       - run: go-licenses save "$PACKAGE" --save_path third_party_licenses
         env:
@@ -126,6 +126,10 @@ jobs:
       - run: |
           version=$(go env GOVERSION)
           curl -Lq -o third_party_licenses/go/LICENSE --retry 5 "https://raw.githubusercontent.com/golang/go/refs/tags/go${version#go}/LICENSE"
+
+      - run: syft --version
+        env:
+          AQUA_GITHUB_TOKEN: ${{ github.token }}
 
       - name: Run GoReleaser
         run: goreleaser release --skip publish --clean
@@ -184,7 +188,7 @@ jobs:
           path: dist
       - run: cosign version
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          AQUA_GITHUB_TOKEN: ${{ github.token }}
       - run: |
           checksum=$(find dist -name "*checksums.txt")
 
@@ -243,4 +247,4 @@ jobs:
       - run: ls dist
       - run: gh release create -R "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" -p dist/*
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
