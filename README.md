@@ -2,7 +2,6 @@
 
 GitHub Actions Reusable Workflow for Go Application
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/suzuki-shunsuke/go-release-workflow)
 [workflow](.github/workflows/release.yaml)
 
 ## How to use
@@ -20,7 +19,7 @@ jobs:
     secrets:
       TAKUMI_GUARD_BOT_ID: ${{secrets.TAKUMI_GUARD_BOT_ID}} # Optional. https://github.com/flatt-security/setup-takumi-guard-golang
     with:
-      aqua_version: v2.59.1
+      aqua_version: v2.63.0
       go-version-file: go.mod
       # go-cache: true # Optional. Enable the cache of actions/setup-go. The default is false
     permissions:
@@ -38,14 +37,12 @@ third_party_licenses
 
 ## Requirements
 
-- Cosign
+Cosign and go-licenses are installed by `aqua`, so they are optional. #311
+
 - GoReleaser
-- [go-licenses](https://github.com/google/go-licenses)
+- Cosign (optional)
+- [go-licenses](https://github.com/google/go-licenses) (optional)
 
 ```sh
 aqua g -i sigstore/cosign goreleaser/goreleaser google/go-licenses
 ```
-
-## LICENSE
-
-[MIT](LICENSE)

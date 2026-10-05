@@ -1,0 +1,15 @@
+name: build
+description: build
+inputs:
+  aqua_version:
+    description: aqua version
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: echo "AQUA_GLOBAL_CONFIG=${GITHUB_ACTION_PATH}/aqua/aqua.yaml" >> "$GITHUB_ENV"
+    - uses: aquaproj/aqua-installer@96a9bc20066c5bf5e275b41019cfc165b25f4e2e # v4.0.5
+      with:
+        aqua_version: ${{inputs.aqua_version}}
+        aqua_opts: -l -a
