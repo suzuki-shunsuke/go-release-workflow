@@ -147,6 +147,10 @@ jobs:
       - run: syft --version
         env:
           AQUA_GITHUB_TOKEN: ${{ github.token }}
+      # GoReleaser runs syft with only a few environment variables such as PATH and HOME.
+      # AQUA_GLOBAL_CONFIG isn't passed, so aqua's proxy can't find syft.
+      # Add the directory of the syft binary itself to PATH.
+      - run: dirname "$(aqua which syft)" >> "$GITHUB_PATH"
 
       - name: Run GoReleaser
         run: goreleaser release --skip publish --clean
