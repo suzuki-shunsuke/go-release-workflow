@@ -130,7 +130,7 @@ jobs:
           mkdir -p "$gomodcache"
           tar -C "$gomodcache" -xzf "$RUNNER_TEMP/gomodule/gomodcache.tar.gz"
 
-      - name: Install goreleaser
+      - name: Install goreleaser and syft
         uses: $/actions/install
         with:
           aqua_version: ${{inputs.aqua_version}}
