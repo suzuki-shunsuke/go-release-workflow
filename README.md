@@ -19,7 +19,7 @@ jobs:
     secrets:
       TAKUMI_GUARD_BOT_ID: ${{secrets.TAKUMI_GUARD_BOT_ID}} # Optional. https://github.com/flatt-security/setup-takumi-guard-golang
     with:
-      aqua_version: v2.63.0
+      aqua_version: v2.64.0
       go-version-file: go.mod
       # go-cache: true # Optional. Enable the cache of actions/setup-go. The default is false
     permissions:
