@@ -4,12 +4,15 @@ inputs:
   aqua_version:
     description: aqua version
     required: true
+  packages:
+    description: command and package names to be installed
+    required: true
 runs:
   using: composite
   steps:
     - shell: bash
-      run: echo "AQUA_GLOBAL_CONFIG=${GITHUB_ACTION_PATH}/aqua/aqua.yaml" >> "$GITHUB_ENV"
+      run: cp -Rf "${GITHUB_ACTION_PATH}/aqua" "$GITHUB_WORKSPACE/../.aqua"
     - uses: aquaproj/aqua-installer@82d0e83878a8657c4a6f2ff1755d3bfbfc67f329 # v4.1.0
       with:
         aqua_version: ${{inputs.aqua_version}}
-        aqua_opts: -l -a
+        packages: ${{inputs.packages}}
