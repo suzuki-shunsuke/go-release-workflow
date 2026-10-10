@@ -22,6 +22,8 @@ jobs:
       aqua_version: v2.64.0
       go-version-file: go.mod
       # go-cache: true # Optional. Enable the cache of actions/setup-go. The default is false
+      # packslip: true # Optional. Publish packslip.sigstore.json so mise can install the release. The default is false
+      # packslip_bin: pinact # Optional. The executable in each archive. The default is the repository name
     permissions:
       contents: write
       id-token: write
@@ -33,6 +35,12 @@ jobs:
 ```
 third_party_licenses
 ```
+
+## Packslip
+
+Set `packslip: true` to publish a signed [packslip](https://packslip.dev/) (`packslip.sigstore.json`) beside the archives, so users can run `mise use packslip:github.com/<owner>/<repo>`.
+The `packslip` job runs after the `attestation` job, links the GitHub attestations of the `*.tar.gz` and `*.zip` archives, signs with the workflow's OIDC identity, and passes the bundle to the `release` job.
+The job has only `contents: read` and `id-token: write`.
 
 ## Requirements
 
