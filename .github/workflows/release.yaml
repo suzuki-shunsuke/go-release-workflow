@@ -89,7 +89,7 @@ jobs:
       # Artifacts are scoped to this workflow run, so they can't be poisoned by other workflows.
       # Files are archived with tar because artifacts don't preserve file permissions.
       - name: Upload Go modules and go_install packages (go-licenses)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: gomodule
           path: ${{ runner.temp }}/gomodule
@@ -173,7 +173,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Upload GoReleaser artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dist
           path: |
@@ -184,14 +184,14 @@ jobs:
             dist/*.jsonl
 
       - name: Upload checksum files
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: checksum
           path: |
             dist/*.txt
 
       - name: Upload Goreleaser artifacts (Homebrew, Scoop, Winget)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: goreleaser
           path: |
@@ -233,7 +233,7 @@ jobs:
             --oidc-provider github
 
       - name: Upload signed checksum files
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: cosign
           path: |
