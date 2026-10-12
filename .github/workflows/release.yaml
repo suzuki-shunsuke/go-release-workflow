@@ -53,7 +53,7 @@ jobs:
     # The build job runs code controlled by the caller (e.g. GoReleaser hooks),
     # so it must not have id-token: write.
     # Go modules and go-licenses are passed to the build job via an artifact.
-    uses: suzuki-shunsuke/download-go-module-action/.github/workflows/download.yaml@9b315459d80513111c52b004d15ad89e7b3e46b7 # v0.0.4
+    uses: suzuki-shunsuke/download-go-module-action/.github/workflows/download.yaml@e41b50de59a715fcc3dc9fd54f43d030749942c8 # v0.0.6
     permissions:
       contents: read
       id-token: write
@@ -94,7 +94,7 @@ jobs:
           cache: false
 
       - name: Restore Go modules and go-licenses
-        uses: suzuki-shunsuke/download-go-module-action/restore@9b315459d80513111c52b004d15ad89e7b3e46b7 # v0.0.4
+        uses: suzuki-shunsuke/download-go-module-action/restore@e41b50de59a715fcc3dc9fd54f43d030749942c8 # v0.0.6
         with:
           aqua_version: ${{inputs.aqua_version}}
 
