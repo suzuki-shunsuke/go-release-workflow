@@ -40,6 +40,19 @@ on:
         # The executable inside each archive. The default is the repository name.
         required: false
         type: string
+      split_build:
+        # Compile each target in parallel jobs to warm up Go's build cache before the build job runs GoReleaser.
+        # This speeds up the release of large applications.
+        required: false
+        type: boolean
+        default: false
+      split_build_targets:
+        # A JSON array of targets compiled in parallel when split_build is true.
+        # Each target is <GOOS>_<GOARCH>.
+        # A target missing from this list is still built by GoReleaser, just without the warmed up cache.
+        required: false
+        type: string
+        default: '["linux_amd64", "linux_arm64", "darwin_amd64", "darwin_arm64", "windows_amd64", "windows_arm64"]'
 
 permissions: {}
 
@@ -64,10 +77,78 @@ jobs:
     secrets:
       TAKUMI_GUARD_BOT_ID: ${{secrets.TAKUMI_GUARD_BOT_ID}}
 
-  build:
+  build-cache:
+    # Compile each target in parallel and pass Go's build cache to the build job.
+    # The build job still builds every target with GoReleaser, so this job only makes it faster.
+    if: inputs.split_build
     timeout-minutes: 30
     runs-on: ubuntu-26.04
     needs: gomodule
+    permissions:
+      contents: read
+    env:
+      GOPROXY: "off"
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(inputs.split_build_targets) }}
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{inputs.go-version}}
+          go-version-file: ${{inputs.go-version-file}}
+          cache: false
+
+      - name: Restore Go modules and go-licenses
+        uses: suzuki-shunsuke/download-go-module-action/restore@59ba5863b931de21763c13df6ad926cf98158517 # v0.0.8
+        with:
+          aqua_version: ${{inputs.aqua_version}}
+
+      - name: Install goreleaser
+        uses: $/actions/install
+        with:
+          aqua_version: ${{inputs.aqua_version}}
+          packages: goreleaser
+
+      - name: Remove changes
+        run: git checkout -- .
+
+      - name: Build the target with GoReleaser
+        id: build
+        # The build job builds the target again, so a failure here only makes the build job slower.
+        continue-on-error: true
+        # Build with the same configuration as the build job so that the compile results are reused.
+        # The version only affects the linker flags, so a snapshot build is enough.
+        run: |
+          GOOS=${TARGET%%_*} GOARCH=${TARGET#*_} goreleaser build --single-target --snapshot --clean
+        env:
+          TARGET: ${{ matrix.target }}
+
+      - name: Archive Go's build cache
+        if: steps.build.outcome == 'success'
+        run: tar -C "$(go env GOCACHE)" -cf - . | zstd -T0 -3 -q -o "$RUNNER_TEMP/gocache.tar.zst"
+
+      - name: Upload Go's build cache
+        if: steps.build.outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gocache-${{ matrix.target }}
+          path: ${{ runner.temp }}/gocache.tar.zst
+          compression-level: 0 # Already compressed by zstd
+          retention-days: 1
+
+  build:
+    # build-cache is skipped unless inputs.split_build is true.
+    if: ${{ !cancelled() && !failure() }}
+    timeout-minutes: 30
+    runs-on: ubuntu-26.04
+    needs: [gomodule, build-cache]
     permissions:
       contents: read
     env:
@@ -97,6 +178,25 @@ jobs:
         uses: suzuki-shunsuke/download-go-module-action/restore@59ba5863b931de21763c13df6ad926cf98158517 # v0.0.8
         with:
           aqua_version: ${{inputs.aqua_version}}
+
+      - name: Download Go's build cache
+        if: inputs.split_build
+        # Without the build cache, GoReleaser just builds from scratch.
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: gocache-*
+          path: ${{ runner.temp }}/gocache
+
+      - name: Restore Go's build cache
+        if: inputs.split_build
+        continue-on-error: true
+        run: |
+          gocache=$(go env GOCACHE)
+          mkdir -p "$gocache"
+          find "$RUNNER_TEMP/gocache" -name gocache.tar.zst | while read -r f; do
+            zstd -dc "$f" | tar -xf - -C "$gocache"
+          done
 
       - name: Install goreleaser and syft
         uses: $/actions/install
@@ -162,6 +262,8 @@ jobs:
             dist/winget
 
   cosign:
+    # Run even if build-cache is skipped.
+    if: ${{ !cancelled() && !failure() }}
     timeout-minutes: 10
     runs-on: ubuntu-26.04
     needs: [build]
@@ -202,6 +304,7 @@ jobs:
             dist/*.sigstore.json
 
   attestation:
+    if: ${{ !cancelled() && !failure() }}
     timeout-minutes: 10
     runs-on: ubuntu-26.04
     needs: [cosign]
@@ -234,7 +337,7 @@ jobs:
   packslip:
     # Sign the packslip in a job without contents: write.
     # The release job uploads the bundle with the other assets.
-    if: inputs.packslip
+    if: ${{ inputs.packslip && !cancelled() && !failure() }}
     timeout-minutes: 10
     runs-on: ubuntu-26.04
     # The attestation job attests the archives, and the packslip links those attestations.
