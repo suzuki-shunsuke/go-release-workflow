@@ -15,7 +15,7 @@ on:
 permissions: {}
 jobs:
   release:
-    uses: suzuki-shunsuke/go-release-workflow/.github/workflows/release.yaml@f3116b4a0418dc22a5332182659bbaaa523fcfa1 # v10.1.0
+    uses: suzuki-shunsuke/go-release-workflow/.github/workflows/release.yaml@5b8d75c27ab40fe6ef0e18b35912125c0ed6b2d1 # v10.1.1
     secrets:
       TAKUMI_GUARD_BOT_ID: ${{secrets.TAKUMI_GUARD_BOT_ID}} # Optional. https://github.com/flatt-security/setup-takumi-guard-golang
     with:
@@ -55,7 +55,28 @@ Archives, checksums, SBOMs, and so on are still created by GoReleaser in the `bu
 If a `build-cache` job fails, or a target is missing from `split_build_targets`, the `build` job just compiles that target from scratch.
 
 Each target in `split_build_targets` is `<GOOS>_<GOARCH>`.
-It adds a job per target, so this only pays off when the build takes long. For a small application, the overhead of the jobs can exceed the time saved.
+
+### When to enable split_build
+
+`split_build` adds a stage of jobs before the `build` job.
+Each `build-cache` job takes about 30 seconds to set up, and the `build` job takes a few more seconds to restore the build cache.
+So `split_build` pays off only when the build takes much longer than that.
+
+As a guideline, enable it if `building binaries` of GoReleaser takes more than 2 minutes.
+You can find the time in the log of the `build` job:
+
+```
+  • building binaries
+    ...
+      • took: 3m37s
+```
+
+For example:
+
+| Repository | GoReleaser's build | split_build |
+|---|---|---|
+| [aquaproj/ar2](https://github.com/aquaproj/ar2) | 3m37s | The build part of the workflow got about 2 minutes faster ([#339](https://github.com/suzuki-shunsuke/go-release-workflow/pull/339#issuecomment-6193863916)) |
+| [suzuki-shunsuke/ghtkn](https://github.com/suzuki-shunsuke/ghtkn) | 48s | Not recommended. The overhead of the jobs cancels out the time saved |
 
 ## Requirements
 
