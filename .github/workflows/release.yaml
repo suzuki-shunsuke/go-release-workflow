@@ -353,7 +353,7 @@ jobs:
           path: dist
 
       - name: Create and sign the packslip
-        uses: jdx/packslip@0e9bde4ea49070555a79cac1f040f1dafe60acd6 # v1.8.0
+        uses: jdx/packslip@2187c31f8317b8548833baf60cfe93db1f42431d # v1.9.0
         with:
           artifacts: |
             dist/*.tar.gz
