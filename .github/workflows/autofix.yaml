@@ -14,13 +14,14 @@ jobs:
       - uses: aquaproj/aqua-installer@611554c6f0137ba41c8dd15aca8bee82504ea461 # v4.1.1
         with:
           aqua_version: v2.65.2
+          packages: |
+            nllint
+            pinact
       - run: aqua upc -prune
         env:
           AQUA_GITHUB_TOKEN: ${{github.token}}
-      - run: nllint -v
-        env:
-          AQUA_GITHUB_TOKEN: ${{github.token}}
-      - run: pinact -v
+      - run: aqua upc -prune
+        working-directory: actions/install
         env:
           AQUA_GITHUB_TOKEN: ${{github.token}}
       - run: git ls-files | nllint -s -f
