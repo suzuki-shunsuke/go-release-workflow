@@ -269,12 +269,11 @@ jobs:
     needs: [build]
     permissions:
       id-token: write # required for cosign
+    env:
+      # Don't checkout the repository in this job because it has id-token: write.
+      # The aqua policy file of the caller doesn't exist in this job and isn't needed to install cosign.
+      AQUA_POLICY_CONFIG: ""
     steps:
-      - name: Checkout the repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
       - name: Install Cosign
         uses: $/actions/install
         with:
