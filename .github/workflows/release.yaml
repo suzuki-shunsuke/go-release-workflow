@@ -310,8 +310,7 @@ jobs:
 
           cosign sign-blob "$checksum" \
             -y \
-            --bundle "${checksum}.sigstore.json" \
-            --oidc-provider github
+            --bundle "${checksum}.sigstore.json"
 
       - name: Upload signed checksum files
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -370,7 +369,7 @@ jobs:
           path: dist
 
       - name: Create and sign the packslip
-        uses: jdx/packslip@2187c31f8317b8548833baf60cfe93db1f42431d # v1.9.0
+        uses: jdx/packslip@7d397618045bd98b76cd5cb8177767b2f52789b8 # v1.10.1
         with:
           artifacts: |
             dist/*.tar.gz
