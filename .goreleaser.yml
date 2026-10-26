@@ -12,7 +12,7 @@ archives:
         formats: [zip]
 builds:
   - binary: go-release-workflow
-    main: main.go
+    main: cmd/go-release-workflow/main.go
     env:
       - CGO_ENABLED=0
     goos:
