@@ -38,6 +38,14 @@ jobs:
 third_party_licenses
 ```
 
+## Test the build on refs other than tags
+
+The workflow releases only when it runs on a tag.
+On other refs (e.g. `pull_request`), the `build` job runs `goreleaser release --snapshot` to test the build, and the `cosign`, `attestation`, `packslip`, and `release` jobs are skipped.
+Signing has side effects such as entries in the transparency log, so the workflow signs only a tag.
+
+Grant the same permissions as on tags.
+
 ## Packslip
 
 Set `packslip: true` to publish a signed [packslip](https://packslip.dev/) (`packslip.sigstore.json`) beside the archives, so users can run `mise use packslip:github.com/<owner>/<repo>`.
