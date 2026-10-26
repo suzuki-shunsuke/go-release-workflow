@@ -1,0 +1,28 @@
+---
+name: test (workflow_call)
+permissions: {}
+on:
+  workflow_call:
+    secrets:
+      TAKUMI_GUARD_BOT_ID:
+        required: false
+jobs:
+  test:
+    uses: suzuki-shunsuke/test-workflow/.github/workflows/test.yaml@51ece8dcaabff59820bfb2053c56e3cb281cf7b2 # v0.0.1
+    with:
+      aqua_version: v2.65.2
+    permissions:
+      pull-requests: read
+      contents: read
+
+  test-release:
+    uses: $/.github/workflows/release.yaml
+    with:
+      aqua_version: v2.65.2
+      go-version-file: go.mod
+    secrets:
+      TAKUMI_GUARD_BOT_ID: ${{secrets.TAKUMI_GUARD_BOT_ID}}
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
