@@ -1,5 +1,4 @@
 ---
-name: test (workflow_call)
 permissions: {}
 on:
   workflow_call:
