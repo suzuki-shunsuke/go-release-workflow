@@ -1,0 +1,59 @@
+---
+version: 2
+project_name: go-release-workflow
+archives:
+  - name_template: "{{.ProjectName}}_{{.Os}}_{{.Arch}}"
+    files:
+      - LICENSE
+      - README.md
+      - third_party_licenses/**/*
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+builds:
+  - binary: go-release-workflow
+    main: cmd/go-release-workflow/main.go
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+release:
+  prerelease: "true"
+  header: |
+    [Pull Requests](https://github.com/suzuki-shunsuke/go-release-workflow/pulls?q=is%3Apr+milestone%3A{{.Tag}}) | [Issues](https://github.com/suzuki-shunsuke/go-release-workflow/issues?q=is%3Aissue+milestone%3A{{.Tag}}) | https://github.com/suzuki-shunsuke/go-release-workflow/compare/{{.PreviousTag}}...{{.Tag}}
+
+sboms:
+  - id: default
+    disable: false
+
+homebrew_casks:
+  - repository:
+      owner: suzuki-shunsuke
+      name: homebrew-go-release-workflow
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    # The project name and current git tag are used in the format string.
+    commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
+    homepage: https://github.com/suzuki-shunsuke/go-release-workflow
+    description: Release Go CLI
+    license: MIT
+    skip_upload: true
+    hooks:
+      post:
+        install_steps: |
+          on_macos do
+            run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ .StagedPath }}/go-release-workflow"]
+          end
+
+scoops:
+  - description: Release Go CLI
+    license: MIT
+    skip_upload: true
+    repository:
+      owner: suzuki-shunsuke
+      name: scoop-bucket
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
