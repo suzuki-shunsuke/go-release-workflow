@@ -231,19 +231,19 @@ jobs:
 
       # The release job creates the release, so GoReleaser only builds the artifacts here.
       # GoReleaser doesn't need GITHUB_TOKEN because it doesn't publish anything.
-      # validate is skipped because the tag is passed via GORELEASER_CURRENT_TAG.
-      # validate used to fail if HEAD wasn't tagged, so check the ref type instead.
-      # GoReleaser only warns about a non-semver GORELEASER_CURRENT_TAG.
+      # On a tag, validate is skipped because the tag is passed via GORELEASER_CURRENT_TAG.
+      # On other refs (e.g. pull_request), build a snapshot to test the build.
+      # The version is <latest tag>-SNAPSHOT-<commit>, and the jobs after this one are skipped.
       - name: Run GoReleaser without creating a release
         run: |
-          if [ "$GITHUB_REF_TYPE" != tag ]; then
-            echo "::error::This workflow must run on a tag, but github.ref is $GITHUB_REF"
-            exit 1
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            goreleaser release --skip publish,validate --clean
+          else
+            goreleaser release --snapshot --clean
           fi
-          goreleaser release --skip publish,validate --clean
         env:
           # Use the tag of the event even if the commit has multiple tags.
-          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
+          GORELEASER_CURRENT_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
 
       - name: Upload GoReleaser artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -274,7 +274,8 @@ jobs:
 
   cosign:
     # Run even if build-cache is skipped.
-    if: ${{ !cancelled() && !failure() }}
+    # Signing has side effects (a certificate and an entry in the transparency log), so sign only a tag.
+    if: ${{ github.ref_type == 'tag' && !cancelled() && !failure() }}
     timeout-minutes: 10
     runs-on: ubuntu-26.04
     needs: [build]
@@ -313,7 +314,8 @@ jobs:
             dist/*.sigstore.json
 
   attestation:
-    if: ${{ !cancelled() && !failure() }}
+    # Attest only a tag. Each job checks the ref type because a skipped job doesn't skip its dependents.
+    if: ${{ github.ref_type == 'tag' && !cancelled() && !failure() }}
     timeout-minutes: 10
     runs-on: ubuntu-26.04
     needs: [cosign]
@@ -346,7 +348,7 @@ jobs:
   packslip:
     # Sign the packslip in a job without contents: write.
     # The release job uploads the bundle with the other assets.
-    if: ${{ inputs.packslip && !cancelled() && !failure() }}
+    if: ${{ inputs.packslip && github.ref_type == 'tag' && !cancelled() && !failure() }}
     timeout-minutes: 10
     runs-on: ubuntu-26.04
     # The attestation job attests the archives, and the packslip links those attestations.
@@ -380,7 +382,8 @@ jobs:
 
   release:
     # packslip is skipped unless inputs.packslip is true.
-    if: ${{ !cancelled() && !failure() }}
+    # Release only a tag. On other refs (e.g. pull_request) the workflow just tests the build.
+    if: ${{ github.ref_type == 'tag' && !cancelled() && !failure() }}
     timeout-minutes: 10
     runs-on: ubuntu-26.04
     needs: [cosign, packslip]
