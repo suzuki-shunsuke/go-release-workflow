@@ -229,10 +229,21 @@ jobs:
           version=$(go env GOVERSION)
           curl -Lq -o third_party_licenses/go/LICENSE --retry 5 "https://raw.githubusercontent.com/golang/go/refs/tags/go${version#go}/LICENSE"
 
+      # The release job creates the release, so GoReleaser only builds the artifacts here.
+      # GoReleaser doesn't need GITHUB_TOKEN because it doesn't publish anything.
+      # validate is skipped because the tag is passed via GORELEASER_CURRENT_TAG.
+      # validate used to fail if HEAD wasn't tagged, so check the ref type instead.
+      # GoReleaser only warns about a non-semver GORELEASER_CURRENT_TAG.
       - name: Run GoReleaser without creating a release
-        run: goreleaser release --skip publish --clean
+        run: |
+          if [ "$GITHUB_REF_TYPE" != tag ]; then
+            echo "::error::This workflow must run on a tag, but github.ref is $GITHUB_REF"
+            exit 1
+          fi
+          goreleaser release --skip publish,validate --clean
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          # Use the tag of the event even if the commit has multiple tags.
+          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
 
       - name: Upload GoReleaser artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
