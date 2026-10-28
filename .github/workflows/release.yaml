@@ -72,7 +72,7 @@ jobs:
     # The build job runs code controlled by the caller (e.g. GoReleaser hooks),
     # so it must not have id-token: write.
     # Go modules and go-licenses are passed to the build job via an artifact.
-    uses: suzuki-shunsuke/download-go-module-action/.github/workflows/download.yaml@59ba5863b931de21763c13df6ad926cf98158517 # v0.0.8
+    uses: suzuki-shunsuke/download-go-module-action/.github/workflows/download.yaml@e03acd0c9d3d230019ebb7bd4a62507431fe4316 # v0.0.10
     permissions:
       contents: read
       id-token: write
@@ -112,7 +112,7 @@ jobs:
           cache: false
 
       - name: Restore Go modules and go-licenses
-        uses: suzuki-shunsuke/download-go-module-action/restore@59ba5863b931de21763c13df6ad926cf98158517 # v0.0.8
+        uses: suzuki-shunsuke/download-go-module-action/restore@e03acd0c9d3d230019ebb7bd4a62507431fe4316 # v0.0.10
         with:
           aqua_version: ${{inputs.aqua_version}}
 
@@ -183,7 +183,7 @@ jobs:
           cache: false
 
       - name: Restore Go modules and go-licenses
-        uses: suzuki-shunsuke/download-go-module-action/restore@59ba5863b931de21763c13df6ad926cf98158517 # v0.0.8
+        uses: suzuki-shunsuke/download-go-module-action/restore@e03acd0c9d3d230019ebb7bd4a62507431fe4316 # v0.0.10
         with:
           aqua_version: ${{inputs.aqua_version}}
 
@@ -237,10 +237,21 @@ jobs:
           version=$(go env GOVERSION)
           curl -Lq -o third_party_licenses/go/LICENSE --retry 5 "https://raw.githubusercontent.com/golang/go/refs/tags/go${version#go}/LICENSE"
 
+      # The release job creates the release, so GoReleaser only builds the artifacts here.
+      # GoReleaser doesn't need GITHUB_TOKEN because it doesn't publish anything.
+      # On a tag, validate is skipped because the tag is passed via GORELEASER_CURRENT_TAG.
+      # On other refs (e.g. pull_request), build a snapshot to test the build.
+      # The version is <latest tag>-SNAPSHOT-<commit>, and the jobs after this one are skipped.
       - name: Run GoReleaser without creating a release
-        run: goreleaser release --skip publish --clean
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            goreleaser release --skip publish,validate --clean
+          else
+            goreleaser release --snapshot --clean
+          fi
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          # Use the tag of the event even if the commit has multiple tags.
+          GORELEASER_CURRENT_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
 
       - name: Upload GoReleaser artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -280,18 +291,18 @@ jobs:
 
   cosign:
     # Run even if build-cache is skipped.
-    if: ${{ !cancelled() && !failure() }}
+    # Signing has side effects (a certificate and an entry in the transparency log), so sign only a tag.
+    if: ${{ github.ref_type == 'tag' && !cancelled() && !failure() }}
     timeout-minutes: 10
     runs-on: ubuntu-26.04
     needs: [build]
     permissions:
       id-token: write # required for cosign
+    env:
+      # Don't checkout the repository in this job because it has id-token: write.
+      # The aqua policy file of the caller doesn't exist in this job and isn't needed to install cosign.
+      AQUA_POLICY_CONFIG: ""
     steps:
-      - name: Checkout the repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
       - name: Install Cosign
         uses: $/actions/install
         with:
@@ -320,7 +331,8 @@ jobs:
             dist/*.sigstore.json
 
   attestation:
-    if: ${{ !cancelled() && !failure() }}
+    # Attest only a tag. Each job checks the ref type because a skipped job doesn't skip its dependents.
+    if: ${{ github.ref_type == 'tag' && !cancelled() && !failure() }}
     timeout-minutes: 10
     runs-on: ubuntu-26.04
     needs: [cosign]
@@ -353,7 +365,7 @@ jobs:
   packslip:
     # Sign the packslip in a job without contents: write.
     # The release job uploads the bundle with the other assets.
-    if: ${{ inputs.packslip && !cancelled() && !failure() }}
+    if: ${{ inputs.packslip && github.ref_type == 'tag' && !cancelled() && !failure() }}
     timeout-minutes: 10
     runs-on: ubuntu-26.04
     # The attestation job attests the archives, and the packslip links those attestations.
@@ -369,7 +381,7 @@ jobs:
           path: dist
 
       - name: Create and sign the packslip
-        uses: jdx/packslip@7d397618045bd98b76cd5cb8177767b2f52789b8 # v1.10.1
+        uses: jdx/packslip@ddcddd9c8c33977d2d08d5db91caec579da59aab # v1.11.0
         with:
           artifacts: |
             dist/*.tar.gz
@@ -387,7 +399,8 @@ jobs:
 
   provenance:
     # Run even if build-cache is skipped.
-    if: ${{ inputs.slsa_provenance && !cancelled() && !failure() }}
+    # Signing has side effects (a certificate and an entry in the transparency log), so sign only a tag.
+    if: ${{ inputs.slsa_provenance && github.ref_type == 'tag' && !cancelled() && !failure() }}
     needs: [build]
     permissions:
       actions: read # Needed for detection of GitHub Actions environment.
@@ -403,7 +416,8 @@ jobs:
 
   release:
     # packslip and provenance are skipped unless inputs.packslip and inputs.slsa_provenance are true.
-    if: ${{ !cancelled() && !failure() }}
+    # Release only a tag. On other refs (e.g. pull_request) the workflow just tests the build.
+    if: ${{ github.ref_type == 'tag' && !cancelled() && !failure() }}
     timeout-minutes: 10
     runs-on: ubuntu-26.04
     needs: [cosign, packslip, provenance]

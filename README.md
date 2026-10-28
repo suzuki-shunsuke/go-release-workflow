@@ -15,7 +15,7 @@ on:
 permissions: {}
 jobs:
   release:
-    uses: suzuki-shunsuke/go-release-workflow/.github/workflows/release.yaml@f30568f22945d2bf05d2b1380fa38bd50ac5946e # v10.1.2
+    uses: suzuki-shunsuke/go-release-workflow/.github/workflows/release.yaml@e897cae161ab26b8c5471a4749e69432bb4be396 # v10.2.0
     secrets:
       TAKUMI_GUARD_BOT_ID: ${{secrets.TAKUMI_GUARD_BOT_ID}} # Optional. https://github.com/flatt-security/setup-takumi-guard-golang
     with:
@@ -39,6 +39,14 @@ jobs:
 ```
 third_party_licenses
 ```
+
+## Test the build on refs other than tags
+
+The workflow releases only when it runs on a tag.
+On other refs (e.g. `pull_request`), the `build` job runs `goreleaser release --snapshot` to test the build, and the `cosign`, `attestation`, `packslip`, and `release` jobs are skipped.
+Signing has side effects such as entries in the transparency log, so the workflow signs only a tag.
+
+Grant the same permissions as on tags.
 
 ## Packslip
 
