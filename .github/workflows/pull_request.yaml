@@ -20,6 +20,7 @@ jobs:
     secrets:
       TAKUMI_GUARD_BOT_ID: ${{secrets.TAKUMI_GUARD_BOT_ID}}
     permissions:
+      actions: read # required by the provenance job of release.yaml
       contents: write
       id-token: write
       attestations: write
