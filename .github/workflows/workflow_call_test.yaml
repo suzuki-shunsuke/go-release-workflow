@@ -9,7 +9,7 @@ jobs:
   test:
     uses: suzuki-shunsuke/test-workflow/.github/workflows/test.yaml@0b89b9b4314282810bc944364380568708208eaa # v0.0.2
     with:
-      aqua_version: v2.65.2
+      aqua_version: v2.66.0
     permissions:
       pull-requests: read
       contents: read
@@ -17,7 +17,7 @@ jobs:
   test-release:
     uses: $/.github/workflows/release.yaml
     with:
-      aqua_version: v2.65.2
+      aqua_version: v2.66.0
       go-version-file: go.mod
     secrets:
       TAKUMI_GUARD_BOT_ID: ${{secrets.TAKUMI_GUARD_BOT_ID}}
