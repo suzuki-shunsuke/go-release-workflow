@@ -66,7 +66,7 @@ jobs:
     # The build job runs code controlled by the caller (e.g. GoReleaser hooks),
     # so it must not have id-token: write.
     # Go modules and go-licenses are passed to the build job via an artifact.
-    uses: suzuki-shunsuke/download-go-module-action/.github/workflows/download.yaml@e03acd0c9d3d230019ebb7bd4a62507431fe4316 # v0.0.10
+    uses: suzuki-shunsuke/download-go-module-action/.github/workflows/download.yaml@v0.0.10
     permissions:
       contents: read
       id-token: write
@@ -94,19 +94,19 @@ jobs:
         target: ${{ fromJSON(inputs.split_build_targets) }}
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
       - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        uses: actions/setup-go@v7.0.0
         with:
           go-version: ${{inputs.go-version}}
           go-version-file: ${{inputs.go-version-file}}
           cache: false
 
       - name: Restore Go modules and go-licenses
-        uses: suzuki-shunsuke/download-go-module-action/restore@e03acd0c9d3d230019ebb7bd4a62507431fe4316 # v0.0.10
+        uses: suzuki-shunsuke/download-go-module-action/restore@v0.0.10
         with:
           aqua_version: ${{inputs.aqua_version}}
 
@@ -136,7 +136,7 @@ jobs:
 
       - name: Upload Go's build cache
         if: steps.build.outcome == 'success'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: gocache-${{ matrix.target }}
           path: ${{ runner.temp }}/gocache.tar.zst
@@ -163,19 +163,19 @@ jobs:
           exit 1
 
       - name: Checkout the repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
       - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        uses: actions/setup-go@v7.0.0
         with:
           go-version: ${{inputs.go-version}}
           go-version-file: ${{inputs.go-version-file}}
           cache: false
 
       - name: Restore Go modules and go-licenses
-        uses: suzuki-shunsuke/download-go-module-action/restore@e03acd0c9d3d230019ebb7bd4a62507431fe4316 # v0.0.10
+        uses: suzuki-shunsuke/download-go-module-action/restore@v0.0.10
         with:
           aqua_version: ${{inputs.aqua_version}}
 
@@ -246,7 +246,7 @@ jobs:
           GORELEASER_CURRENT_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
 
       - name: Upload GoReleaser artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: dist
           path: |
@@ -257,14 +257,14 @@ jobs:
             dist/*.jsonl
 
       - name: Upload checksum files
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: checksum
           path: |
             dist/*.txt
 
       - name: Upload Goreleaser artifacts (Homebrew, Scoop, Winget)
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: goreleaser
           path: |
@@ -307,7 +307,7 @@ jobs:
             --bundle "${checksum}.sigstore.json"
 
       - name: Upload signed checksum files
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: cosign
           path: |
@@ -336,7 +336,7 @@ jobs:
           path: dist
 
       - name: Attest release artifacts
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        uses: actions/attest@v4.2.2
         with:
           subject-path: |
             dist/*.tar.gz
@@ -364,7 +364,7 @@ jobs:
           path: dist
 
       - name: Create and sign the packslip
-        uses: jdx/packslip@b934a22ba187f1d3928441170b9413c5119360bf # v1.11.2
+        uses: jdx/packslip@v1.11.2
         with:
           artifacts: |
             dist/*.tar.gz
@@ -375,7 +375,7 @@ jobs:
           out: packslip
 
       - name: Upload the packslip
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: packslip
           path: packslip/*.sigstore.json
