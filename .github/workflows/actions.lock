@@ -12,7 +12,6 @@ workflows:
         - 'autofix-ci/action@v1.3.4'
     '.github/workflows/check-commit-signing.yaml': []
     '.github/workflows/pull_request.yaml': []
-    '.github/workflows/renovate-config-validator.yaml': []
     '.github/workflows/workflow_call_test.yaml': []
 dependencies:
     'actions/checkout@v7.0.1':
